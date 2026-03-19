@@ -2,110 +2,76 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Gerenciamento Mensal</title>
+<title>Dashboard Mensal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-
-:root{
-  --bg1:#0f0c29;
-  --bg2:#1a1a2e;
-  --card:rgba(255,255,255,0.05);
-  --border:rgba(255,255,255,0.1);
-  --text:#ffffff;
-  --muted:#9ca3af;
-  --green:#00ffb3;
-  --red:#ff4d6d;
-}
-
-*{box-sizing:border-box;}
-
 body{
   margin:0;
-  font-family:'Inter',sans-serif;
-  background:linear-gradient(135deg,var(--bg1),var(--bg2));
-  color:var(--text);
+  font-family:Arial;
+  background:linear-gradient(135deg,#0f0c29,#1a1040,#0f172a);
+  color:#fff;
 }
 
 .container{
-  max-width:1300px;
-  margin:60px auto;
-  padding:0 30px;
+  max-width:1200px;
+  margin:auto;
+  padding:20px;
 }
 
 h1{
-  font-weight:600;
-  font-size:32px;
-  margin-bottom:50px;
+  font-size:28px;
+  margin-bottom:20px;
 }
 
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-  gap:30px;
-  margin-bottom:60px;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:15px;
+  margin-bottom:20px;
 }
 
 .card{
-  backdrop-filter:blur(30px);
-  background:var(--card);
-  border:1px solid var(--border);
-  padding:35px;
-  border-radius:20px;
+  background:rgba(255,255,255,0.05);
+  padding:15px;
+  border-radius:12px;
 }
-
-.card span{
-  font-size:14px;
-  color:var(--muted);
-}
-
-.card h2{
-  margin-top:15px;
-  font-size:32px;
-}
-
-.positive{color:var(--green);}
-.negative{color:var(--red);}
 
 table{
   width:100%;
   border-collapse:collapse;
-  backdrop-filter:blur(30px);
-  background:var(--card);
-  border-radius:20px;
+  background:rgba(255,255,255,0.05);
+  border-radius:10px;
   overflow:hidden;
 }
 
 th,td{
-  padding:14px;
+  padding:10px;
   text-align:center;
 }
 
 input{
   width:100%;
-  padding:10px;
-  background:rgba(0,0,0,0.3);
-  border:1px solid var(--border);
-  border-radius:10px;
+  padding:6px;
+  background:#111;
+  border:1px solid #333;
   color:#fff;
 }
 
 button{
-  padding:12px 18px;
+  padding:10px;
   border:none;
-  border-radius:10px;
-  cursor:pointer;
+  border-radius:8px;
   background:#00ffb3;
-  margin-top:10px;
-}
-
-.actions{
-  margin-top:80px;
+  cursor:pointer;
 }
 
 .remove{
-  background:#ff4d6d;
-  color:#fff;
+  background:red;
+}
+
+.actions{
+  margin-top:30px;
 }
 </style>
 </head>
@@ -113,142 +79,130 @@ button{
 <body>
 
 <div class="container">
-<h1>Gerenciamento Mensal</h1>
+<h1>Dashboard Mensal</h1>
 
 <div class="grid">
-  <div class="card"><span>Faturamento</span><h2 id="faturamento">R$ 0</h2></div>
-  <div class="card"><span>Investimento</span><h2 id="investimento">R$ 0</h2></div>
-  <div class="card"><span>Lucro</span><h2 id="lucro">R$ 0</h2></div>
-  <div class="card"><span>% Lucro</span><h2 id="margem">0%</h2></div>
-  <div class="card"><span>ROI</span><h2 id="roi">0%</h2></div>
+  <div class="card">Faturamento<br><b id="fat">0</b></div>
+  <div class="card">Investimento<br><b id="inv">0</b></div>
+  <div class="card">Lucro<br><b id="luc">0</b></div>
+  <div class="card">%<br><b id="mar">0</b></div>
+  <div class="card">ROI<br><b id="roi">0</b></div>
 </div>
 
-<table id="tabela">
+<table>
 <thead>
 <tr>
 <th>Produto</th>
-<th>Quanto Paguei</th>
-<th>Quanto Vendi</th>
-<th>Quantidade</th>
+<th>Paguei</th>
+<th>Vendi</th>
+<th>Qtd</th>
 <th>KM</th>
 <th>Custo KM</th>
-<th>Ação</th>
+<th>Lucro</th>
+<th></th>
 </tr>
 </thead>
-<tbody></tbody>
+<tbody id="tb"></tbody>
 </table>
 
 <div class="actions">
-<button onclick="addLinha()">Adicionar Produto</button>
-<button onclick="exportar()">Exportar</button>
-<input type="file" onchange="importar(event)">
+<button onclick="add()">+ Adicionar</button>
+<button onclick="exp()">Exportar</button>
+<input type="file" onchange="imp(event)">
 </div>
 
 </div>
 
 <script>
 
-let dados = JSON.parse(localStorage.getItem("futuristaData")) || [];
+let data = JSON.parse(localStorage.getItem("d"))||[];
 
-function salvar(){
-  localStorage.setItem("futuristaData",JSON.stringify(dados));
+function save(){
+  localStorage.setItem("d",JSON.stringify(data));
 }
 
-function addLinha(prod="",paguei="",vendi="",qtd="",km=""){
-  const tbody=document.querySelector("#tabela tbody");
-  const tr=document.createElement("tr");
-
+function add(p="",pg="",vd="",q="",km=""){
+  let tr=document.createElement("tr");
   tr.innerHTML=`
-    <td><input value="${prod}"></td>
-    <td><input type="number" value="${paguei}"></td>
-    <td><input type="number" value="${vendi}"></td>
-    <td><input type="number" value="${qtd}"></td>
-    <td><input type="number" value="${km}"></td>
-    <td class="custoKm">R$ 0</td>
-    <td><button class="remove" onclick="removerLinha(this)">X</button></td>
+  <td><input value="${p}"></td>
+  <td><input type="number" value="${pg}"></td>
+  <td><input type="number" value="${vd}"></td>
+  <td><input type="number" value="${q}"></td>
+  <td><input type="number" value="${km}"></td>
+  <td class="km">0</td>
+  <td class="l">0</td>
+  <td><button class="remove" onclick="del(this)">X</button></td>
   `;
+  tr.querySelectorAll("input").forEach(i=>i.oninput=calc);
+  document.getElementById("tb").appendChild(tr);
+}
 
-  tr.querySelectorAll("input").forEach(el=>{
-    el.addEventListener("input", calcular);
+function del(b){
+  b.closest("tr").remove();
+  calc();
+}
+
+function load(){
+  data.forEach(d=>add(d.p,d.pg,d.vd,d.q,d.km));
+}
+load();
+
+function calc(){
+  let rows=document.querySelectorAll("#tb tr");
+
+  data=[];
+  let fat=0,inv=0,des=0;
+
+  rows.forEach(r=>{
+    let i=r.querySelectorAll("input");
+
+    let p=i[0].value;
+    let pg=+i[1].value||0;
+    let vd=+i[2].value||0;
+    let q=+i[3].value||0;
+    let km=+i[4].value||0;
+
+    let custo=Math.ceil(km*1); // 1 real km
+    let lucro=(vd*q)-(pg*q)-custo;
+
+    r.querySelector(".km").innerText=custo;
+    r.querySelector(".l").innerText=lucro;
+
+    fat+=vd*q;
+    inv+=pg*q;
+    des+=custo;
+
+    data.push({p,pg,vd,q,km});
   });
 
-  tbody.appendChild(tr);
+  let totalInv=inv+des;
+  let l=fat-totalInv;
+
+  document.getElementById("fat").innerText=fat;
+  document.getElementById("inv").innerText=totalInv;
+  document.getElementById("luc").innerText=l;
+  document.getElementById("mar").innerText=((l/fat)*100||0).toFixed(1)+"%";
+  document.getElementById("roi").innerText=((l/totalInv)*100||0).toFixed(1)+"%";
+
+  save();
 }
 
-function removerLinha(btn){
-  btn.closest("tr").remove();
-  calcular();
-}
-
-function carregar(){
-  dados.forEach(d=>addLinha(d.prod,d.paguei,d.vendi,d.qtd,d.km));
-  calcular();
-}
-carregar();
-
-function calcular(){
-  let rows=document.querySelectorAll("#tabela tbody tr");
-  dados=[];
-  let faturamento=0;
-  let investimento=0;
-  let deslocamento=0;
-
-  const custoKmFixo = 1.00;
-
-  rows.forEach(row=>{
-    let c=row.querySelectorAll("input");
-
-    let prod=c[0].value;
-    let pag=parseFloat(c[1].value)||0;
-    let ven=parseFloat(c[2].value)||0;
-    let qtd=parseFloat(c[3].value)||0;
-    let km=parseFloat(c[4].value)||0;
-
-    let custoDesloc = Math.ceil(km * custoKmFixo);
-
-    row.querySelector(".custoKm").innerText = "R$ " + custoDesloc;
-
-    faturamento+=ven*qtd;
-    investimento+=pag*qtd;
-    deslocamento+=custoDesloc;
-
-    dados.push({prod,paguei:pag,vendi:ven,qtd,km});
-  });
-
-  salvar();
-
-  let custoTotal = investimento + deslocamento;
-  let lucro = faturamento - custoTotal;
-  let margem = faturamento? (lucro/faturamento)*100:0;
-  let roi = custoTotal? (lucro/custoTotal)*100:0;
-
-  document.getElementById("faturamento").innerText="R$ "+faturamento.toFixed(2);
-  document.getElementById("investimento").innerText="R$ "+custoTotal.toFixed(2);
-  document.getElementById("lucro").innerText="R$ "+lucro.toFixed(2);
-  document.getElementById("margem").innerText=margem.toFixed(2)+"%";
-  document.getElementById("roi").innerText=roi.toFixed(2)+"%";
-
-  document.getElementById("lucro").className = lucro>=0?"positive":"negative";
-}
-
-function exportar(){
-  const blob=new Blob([JSON.stringify(dados)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="brique_backup.json";
+function exp(){
+  let b=new Blob([JSON.stringify(data)],{type:"application/json"});
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(b);
+  a.download="backup.json";
   a.click();
 }
 
-function importar(event){
-  const file=event.target.files[0];
-  const reader=new FileReader();
-
-  reader.onload=e=>{
-    localStorage.setItem("futuristaData",e.target.result);
+function imp(e){
+  let f=e.target.files[0];
+  let r=new FileReader();
+  r.onload=x=>{
+    localStorage.setItem("d",x.target.result);
     location.reload();
   }
-
-  reader.readAsText(file);
+  r.readAsText(f);
 }
 
 </script>
