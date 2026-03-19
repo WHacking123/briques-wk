@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Gerenciamento Mensal</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+:root{
+  --bg1:#0f0c29;
+  --bg2:#1a1a2e;
+  --card:rgba(255,255,255,0.05);
+  --border:rgba(255,255,255,0.1);
+  --text:#ffffff;
+  --muted:#9ca3af;
+  --green:#00ffb3;
+  --red:#ff4d6d;
+}
+
+*{box-sizing:border-box;}
+
+body{
+  margin:0;
+  font-family:'Inter',sans-serif;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2));
+  color:var(--text);
+}
+
+.container{
+  max-width:1300px;
+  margin:60px auto;
+  padding:0 30px;
+}
+
+h1{
+  font-weight:600;
+  font-size:32px;
+  margin-bottom:50px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:30px;
+  margin-bottom:60px;
+}
+
+.card{
+  backdrop-filter:blur(30px);
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:35px;
+  border-radius:20px;
+}
+
+.card span{
+  font-size:14px;
+  color:var(--muted);
+}
+
+.card h2{
+  margin-top:15px;
+  font-size:32px;
+}
+
+.positive{color:var(--green);}
+.negative{color:var(--red);}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  backdrop-filter:blur(30px);
+  background:var(--card);
+  border-radius:20px;
+  overflow:hidden;
+}
+
+th,td{
+  padding:14px;
+  text-align:center;
+}
+
+input{
+  width:100%;
+  padding:10px;
+  background:rgba(0,0,0,0.3);
+  border:1px solid var(--border);
+  border-radius:10px;
+  color:#fff;
+}
+
+button{
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  background:#00ffb3;
+}
+
+.remove{
+  background:#ff4d6d;
+  color:#fff;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>Gerenciamento Mensal</h1>
+
+<div class="grid">
+  <div class="card"><span>Faturamento</span><h2 id="faturamento">R$ 0</h2></div>
+  <div class="card"><span>Investimento</span><h2 id="investimento">R$ 0</h2></div>
+  <div class="card"><span>Lucro</span><h2 id="lucro">R$ 0</h2></div>
+  <div class="card"><span>% Lucro</span><h2 id="margem">0%</h2></div>
+  <div class="card"><span>ROI</span><h2 id="roi">0%</h2></div>
+</div>
+
+<table id="tabela">
+<thead>
+<tr>
+<th>Produto</th>
+<th>Quanto Paguei</th>
+<th>Quanto Vendi</th>
+<th>Quantidade</th>
+<th>KM</th>
+<th>Custo KM</th>
+<th>Ação</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<div class="actions">
+<button onclick="addLinha()">Adicionar Produto</button>
+<button onclick="exportar()">Exportar</button>
+<input type="file" onchange="importar(event)">
+</div>
+
+</div>
+
+<script>
+
+let dados = JSON.parse(localStorage.getItem("futuristaData")) || [];
+
+function salvar(){
+  localStorage.setItem("futuristaData",JSON.stringify(dados));
+}
+
+function addLinha(prod="",paguei="",vendi="",qtd="",km=""){
+  const tbody=document.querySelector("#tabela tbody");
+  const tr=document.createElement("tr");
+
+  tr.innerHTML=`
+    <td><input value="${prod}"></td>
+    <td><input type="number" value="${paguei}"></td>
+    <td><input type="number" value="${vendi}"></td>
+    <td><input type="number" value="${qtd}"></td>
+    <td><input type="number" value="${km}"></td>
+    <td class="custoKm">R$ 0</td>
+    <td><button class="remove" onclick="removerLinha(this)">X</button></td>
+  `;
+
+  tr.querySelectorAll("input").forEach(el=>{
+    el.addEventListener("input", calcular);
+  });
+
+  tbody.appendChild(tr);
+}
+
+function removerLinha(btn){
+  btn.closest("tr").remove();
+  calcular();
+}
+
+function carregar(){
+  dados.forEach(d=>addLinha(d.prod,d.paguei,d.vendi,d.qtd,d.km));
+  calcular();
+}
+carregar();
+
+function calcular(){
+  let rows=document.querySelectorAll("#tabela tbody tr");
+  dados=[];
+  let faturamento=0;
+  let investimento=0;
+  let deslocamento=0;
+
+  const custoKmFixo = 0.50;
+
+  rows.forEach(row=>{
+    let c=row.querySelectorAll("input");
+
+    let prod=c[0].value;
+    let pag=parseFloat(c[1].value)||0;
+    let ven=parseFloat(c[2].value)||0;
+    let qtd=parseFloat(c[3].value)||0;
+    let km=parseFloat(c[4].value)||0;
+
+    let custoDesloc = Math.ceil(km * custoKmFixo);
+
+    row.querySelector(".custoKm").innerText = "R$ " + custoDesloc;
+
+    faturamento+=ven*qtd;
+    investimento+=pag*qtd;
+    deslocamento+=custoDesloc;
+
+    dados.push({prod,paguei:pag,vendi:ven,qtd,km});
+  });
+
+  salvar();
+
+  let custoTotal = investimento + deslocamento;
+  let lucro = faturamento - custoTotal;
+  let margem = faturamento? (lucro/faturamento)*100:0;
+  let roi = custoTotal? (lucro/custoTotal)*100:0;
+
+  document.getElementById("faturamento").innerText="R$ "+faturamento.toFixed(2);
+  document.getElementById("investimento").innerText="R$ "+custoTotal.toFixed(2);
+  document.getElementById("lucro").innerText="R$ "+lucro.toFixed(2);
+  document.getElementById("margem").innerText=margem.toFixed(2)+"%";
+  document.getElementById("roi").innerText=roi.toFixed(2)+"%";
+
+  document.getElementById("lucro").className = lucro>=0?"positive":"negative";
+}
+
+function exportar(){
+  const blob=new Blob([JSON.stringify(dados)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="brique_dados.json";
+  a.click();
+}
+
+function importar(event){
+  const file=event.target.files[0];
+  const reader=new FileReader();
+
+  reader.onload=e=>{
+    localStorage.setItem("futuristaData",e.target.result);
+    location.reload();
+  }
+
+  reader.readAsText(file);
+}
+
+</script>
+
+</body>
+</html>
